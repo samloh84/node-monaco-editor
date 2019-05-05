@@ -1,0 +1,278 @@
+<html lang="en">
+<head>
+    <title>Monaco Editor</title>
+    <meta charset="utf-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Mono"
+          rel="stylesheet"
+    />
+    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet"
+    />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css"
+          rel="stylesheet"
+    />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.8.1/css/all.min.css"
+          rel="stylesheet"
+          integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf"
+          crossorigin="anonymous"/>
+
+</head>
+<body>
+<div class="w-100 h-100 mx-auto">
+    <main>
+        <div class="container mt-3">
+            <div class="row">
+                <div class="col-12">
+                    <h1>Monaco Editor</h1>
+                </div>
+            </div>
+
+            <div class="row h-100">
+                <div class="col-3">
+                    <div>
+                        <form class="path_form">
+                            <div class="form-group">
+                                <label for="path">Path</label><br>
+                                <input id="path" class="form-control"
+                                       placeholder="Path">
+                            </div>
+
+                            <button type="button" id="browse"
+                                    class="btn btn-primary btn-lg btn-block">
+                                Browse
+                            </button>
+                        </form>
+                        <div id="files" class="list-group"></div>
+                    </div>
+                </div>
+
+                <div class="col-9">
+                    <div id="alerts"></div>
+                    <button type="button" id="save"
+                            class="btn btn-primary btn-lg btn-block">
+                        Save
+                    </button>
+                    <div id="editor" class="w-100 h-100 border"></div>
+                </div>
+            </div>
+
+
+        </div>
+    </main>
+
+    <footer class="footer mt-auto mb-3">
+        <div class="container">
+        </div>
+    </footer>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"
+        integrity="sha384-vk5WoKIaW/vJyUAd9n/wmopsmNhiy+L2Z+SBxGYnUkunIxVxAv/UtMOhba/xskxh"
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.15.0/umd/popper.min.js"
+        integrity="sha384-L2pyEeut/H3mtgCBaUNw7KWzp5n9+4pDQiExs933/5QfaTh8YStYFFkOzSoXjlTb"
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.min.js"
+        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.min.js"
+        integrity="sha384-2HWZ0KJxkQ3nhRpHPzk4AO2iIy1S8rSGwN5MpMS/xf34mqOahLqEbqwvdk48EnEv"
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js"
+        integrity="sha384-fYxN7HsDOBRo1wT/NSZ0LkoNlcXvpDpFy6WzB42LxuKAX7sBwgo7vuins+E1HCaw"
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.min.js"
+        integrity="sha384-lp4k1VRKPU9eBnPePjnJ9M2RF3i7PC30gXs70+elCVfgwLwx1tv5+ctxdtwxqZa7"
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bluebird/3.5.4/bluebird.min.js"
+        integrity="sha384-EVdKcrObd7cU/1MRyDT606D1F6s6WY1U4BrMgWSNrQDmjHa8YDJcuWpP2AxmgsUv"
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"
+        integrity="sha384-U/+EF1mNzvy5eahP9DeB32duTkAmXrePwnRWtuSh1C/bHHhyR1KZCr/aGZBkctpY"
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js"
+        integrity="sha384-8CYhPwYlLELodlcQV713V9ZikA3DlCVaXFDpjHfP8Z36gpddf/Vrt47XmKDsCttu"
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
+
+<script>
+    $(function () {
+
+        require.config({
+            paths: {
+                'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.16.2/min/vs'
+            }
+        });
+
+        window.MonacoEnvironment = {
+            getWorkerUrl: function (workerId, label) {
+                return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
+                self.MonacoEnvironment = {
+                    baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.16.2/min/'
+                };
+                importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.16.2/min/vs/base/worker/workerMain.js');`
+                )}`;
+            }
+        };
+
+        require(['vs/editor/editor.main'], function () {
+            window.monaco = monaco;
+            window.editor_instance = monaco.editor.create(document.getElementById('editor'), {minimap: {enabled: false}});
+        });
+
+        $(window).resize(function () {
+            window.editor_instance.layout();
+        });
+
+        window.open_files = {};
+        window.current_file = null;
+
+        function ls(path) {
+            $.ajax(`/files/ls`, {
+                data: {path: path},
+                success: function (data) {
+                    let path = data.path;
+                    let parent_directory = data.parent_directory;
+                    let files = data.files;
+
+                    let $file_list = $('#files');
+
+
+                    files.unshift({
+                        path: parent_directory,
+                        basename: '..',
+                        is_directory: true
+                    });
+
+
+                    let sorted_files = _.concat([], _.sortBy(_.filter(files, 'is_directory'), 'basename'), _.sortBy(_.filter(files, 'is_file'), 'basename'));
+                    let buttons = _.map(sorted_files, function (file) {
+                        let $file_button = $('<button>');
+
+                        $file_list.append($file_button);
+
+
+                        _.each(file, function (value, key) {
+                            $file_button.attr(`data-${key}`, value);
+                        });
+
+                        if (file.is_directory) {
+                            $file_button.text(`${file.basename}/`);
+                            $file_button.addClass('directory');
+                        }
+
+                        if (file.is_file) {
+                            $file_button.text(`${file.basename}`);
+                            $file_button.addClass('file');
+                        }
+
+                        $file_button.addClass('list-group-item');
+
+
+                        return $file_button;
+                    });
+                    $file_list.find('button').remove();
+                    $file_list.append(buttons);
+
+
+                    $('#path').val(path);
+                }
+            });
+        }
+
+
+        function open_file(path) {
+            console.log(path);
+            $.ajax('files/read', {
+                data: {path: path},
+                dataType: 'text',
+                success: function (file) {
+
+                    let old_model, old_state;
+
+                    if (!_.isNil(window.current_file)) {
+                        old_model = window.editor_instance.getModel();
+                        old_state = window.editor_instance.saveViewState();
+                        _.set(window.open_files, [window.current_file], {
+                            model: old_model,
+                            state: old_state
+                        });
+                    }
+
+                    let new_model, new_state;
+                    if (_.has(window.open_files, path)) {
+                        new_model = _.get(window.open_files, [path, 'model']);
+                        new_state = _.get(window.open_files, [path, 'state']);
+                    } else {
+                        new_model = monaco.editor.createModel(file, null, monaco.Uri.file(path));
+                        console.log(new_model);
+                        new_state = null;
+                    }
+
+                    window.editor_instance.setModel(new_model);
+                    if (!_.isNil(new_state)) {
+                        window.editor_instance.restoreViewState(new_state);
+                    }
+                    window.current_file = path;
+
+                    window.editor_instance.focus();
+                }
+            });
+        }
+
+
+        function save_file(path, contents) {
+            console.log(path);
+            console.log(contents);
+
+            $.ajax(`/files/write`, {
+                method: 'POST',
+                data: {
+                    path: path,
+                    contents: contents
+                },
+                success: function (data) {
+                    let $alert = $('<div>');
+                    $alert.addClass('alert alert-success alert-dismissible fade show');
+                    $alert.attr('role', 'alert');
+                    $alert.text(`Successfully saved ${path}`);
+                    $alert.append($('<button class="close" data-dismiss="alert">').append($('<i class="fas fa-times"></i>')));
+                    $('#alerts').append($alert);
+                }
+
+            });
+        }
+
+        let $file_list = $('#files');
+        $file_list.on('click', 'button.file', function (e) {
+            e.preventDefault();
+            let $this = $(this);
+            let path = $this.attr('data-path');
+            console.log(`open_file(${path})`);
+            open_file(path);
+        });
+        $file_list.on('click', 'button.directory', function (e) {
+            e.preventDefault();
+            let $this = $(this);
+            let path = $this.attr('data-path');
+            ls(path);
+        });
+        $('#browser').on('submit', function (e) {
+            e.preventDefault();
+            let path = $('#path').val();
+            console.log(`ls(${path})`);
+            ls(path);
+        });
+        ls();
+        $('#save').on('click', function (e) {
+            e.preventDefault();
+            let path = window.current_file;
+            save_file(path, window.editor_instance.getValue());
+        });
+
+    });
+
+</script>
+</body>
+</html>
